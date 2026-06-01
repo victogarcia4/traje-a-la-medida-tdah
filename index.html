@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traje a la Medida TDAH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { color-scheme: light; }
+        body { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f7faf9; }
+        .tab-active { background: #0f766e; color: white; box-shadow: 0 10px 20px rgb(15 118 110 / 0.18); }
+        .focus-ring:focus { outline: 3px solid rgb(20 184 166 / 0.28); outline-offset: 2px; }
+        .range-track { accent-color: #0f766e; }
+        .auth-bg {
+            background:
+                radial-gradient(circle at top left, rgb(20 184 166 / 0.16), transparent 34rem),
+                radial-gradient(circle at bottom right, rgb(245 158 11 / 0.14), transparent 30rem),
+                #f8fafc;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800">
+    <div id="authView" class="auth-bg min-h-screen flex items-center justify-center p-4">
+        <section class="w-full max-w-5xl grid lg:grid-cols-[1.05fr_0.95fr] bg-white border border-slate-200 shadow-xl overflow-hidden rounded-2xl">
+            <div class="p-6 sm:p-10 lg:p-12 bg-slate-950 text-white flex flex-col justify-between gap-10">
+                <div>
+                    <p class="text-xs font-bold tracking-[0.28em] text-teal-300 uppercase">Rastreador de tratamiento TDAH</p>
+                    <h1 class="mt-5 text-3xl sm:text-5xl font-extrabold leading-tight">El Traje a la Medida</h1>
+                    <p class="mt-5 text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed">
+                        Registra sintomas, medicacion, sueno, apetito, animo y observaciones en un espacio local, privado y listo para compartir con el equipo clinico.
+                    </p>
+                </div>
+                <div class="grid sm:grid-cols-3 gap-3 text-sm">
+                    <div class="border border-white/10 rounded-xl p-4 bg-white/5">
+                        <p class="font-bold">Local first</p>
+                        <p class="text-slate-400 text-xs mt-1">Tus datos quedan en este navegador.</p>
+                    </div>
+                    <div class="border border-white/10 rounded-xl p-4 bg-white/5">
+                        <p class="font-bold">Por cuenta</p>
+                        <p class="text-slate-400 text-xs mt-1">Cada usuario tiene historial propio.</p>
+                    </div>
+                    <div class="border border-white/10 rounded-xl p-4 bg-white/5">
+                        <p class="font-bold">Clinico</p>
+                        <p class="text-slate-400 text-xs mt-1">Exporta PDF, CSV o respaldo JSON.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 sm:p-10">
+                <div class="flex bg-slate-100 p-1 rounded-xl mb-6">
+                    <button id="loginModeBtn" class="auth-mode flex-1 rounded-lg py-2 text-sm font-bold bg-white shadow-sm" onclick="setAuthMode('login')">Entrar</button>
+                    <button id="registerModeBtn" class="auth-mode flex-1 rounded-lg py-2 text-sm font-bold text-slate-500" onclick="setAuthMode('register')">Crear cuenta</button>
+                </div>
+
+                <form id="authForm" class="space-y-4" onsubmit="handleEmailAuth(event)">
+                    <div id="nameField" class="hidden">
+                        <label for="authName" class="block text-xs font-bold text-slate-500 mb-1">Nombre del paciente o cuidador</label>
+                        <input id="authName" type="text" autocomplete="name" class="focus-ring w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="Ej. Victor Garcia">
+                    </div>
+                    <div>
+                        <label for="authEmail" class="block text-xs font-bold text-slate-500 mb-1">Email</label>
+                        <input id="authEmail" type="email" autocomplete="email" required class="focus-ring w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="tu@email.com">
+                    </div>
+                    <div>
+                        <label for="authPassword" class="block text-xs font-bold text-slate-500 mb-1">Password</label>
+                        <input id="authPassword" type="password" autocomplete="current-password" required minlength="6" class="focus-ring w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="Minimo 6 caracteres">
+                    </div>
+                    <button id="authSubmit" type="submit" class="w-full rounded-xl bg-teal-700 hover:bg-teal-800 text-white py-3 font-extrabold transition">Entrar</button>
+                </form>
+
+                <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+                    <div class="relative flex justify-center"><span class="bg-white px-3 text-xs font-bold uppercase tracking-wider text-slate-400">o</span></div>
+                </div>
+
+                <button onclick="openGooglePanel()" class="w-full rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-3 font-bold text-sm flex items-center justify-center gap-3 transition">
+                    <span class="grid place-items-center w-6 h-6 rounded-full border border-slate-200 font-extrabold text-blue-600">G</span>
+                    Continuar con Google
+                </button>
+
+                <div id="googlePanel" class="hidden mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4 space-y-3">
+                    <p class="text-xs text-blue-900 leading-relaxed">Modo local: ingresa el email de tu cuenta Google para crear una sesion guardada en este navegador. Para OAuth real se requiere un Google Client ID.</p>
+                    <input id="googleName" type="text" class="focus-ring w-full rounded-lg border border-blue-100 px-3 py-2 text-sm" placeholder="Nombre">
+                    <input id="googleEmail" type="email" class="focus-ring w-full rounded-lg border border-blue-100 px-3 py-2 text-sm" placeholder="cuenta@gmail.com">
+                    <button onclick="handleGoogleAuth()" class="w-full rounded-lg bg-blue-600 hover:bg-blue-700 text-white py-2 text-sm font-bold">Entrar con Google</button>
+                </div>
+
+                <p class="mt-6 text-xs text-slate-500 leading-relaxed">
+                    Aviso: esta app no sustituye consulta medica. Es una bitacora para facilitar conversaciones con profesionales de salud.
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <div id="appView" class="hidden min-h-screen">
+        <nav class="no-print sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="text-xs font-extrabold tracking-[0.2em] uppercase text-teal-700">Traje a la Medida</p>
+                    <h1 class="font-extrabold text-slate-950 truncate">Rastreador TDAH</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="roleToggle" onchange="updateRoleUI(); persistSettings();" class="focus-ring hidden sm:block bg-slate-100 rounded-lg px-3 py-2 text-xs font-bold">
+                        <option value="paciente">Paciente</option>
+                        <option value="cuidador">Cuidador</option>
+                    </select>
+                    <button onclick="switchTab('ajustes')" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold hover:bg-slate-50">Ajustes</button>
+                    <button onclick="logout()" class="rounded-lg bg-slate-900 text-white px-3 py-2 text-xs font-bold hover:bg-slate-800">Salir</button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+            <section class="grid lg:grid-cols-[1.2fr_0.8fr] gap-4">
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <p id="welcomeLine" class="text-xs font-bold text-teal-700 uppercase tracking-wider"></p>
+                            <h2 class="text-2xl font-extrabold text-slate-950 mt-1">Panel de seguimiento</h2>
+                            <p class="text-sm text-slate-500 mt-1">Guarda registros diarios y revisa tendencias para la proxima consulta.</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="rounded-xl bg-teal-50 border border-teal-100 p-3 min-w-20">
+                                <p id="statEntries" class="text-2xl font-extrabold text-teal-800">0</p>
+                                <p class="text-[10px] font-bold text-teal-700 uppercase">Registros</p>
+                            </div>
+                            <div class="rounded-xl bg-amber-50 border border-amber-100 p-3 min-w-20">
+                                <p id="statAverage" class="text-2xl font-extrabold text-amber-700">-</p>
+                                <p class="text-[10px] font-bold text-amber-700 uppercase">Promedio</p>
+                            </div>
+                            <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 min-w-20">
+                                <p id="statStreak" class="text-2xl font-extrabold text-slate-800">0</p>
+                                <p class="text-[10px] font-bold text-slate-600 uppercase">Racha</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-950 text-white rounded-2xl p-5 shadow-sm">
+                    <p class="text-xs font-bold text-teal-300 uppercase tracking-wider">Ultimo registro</p>
+                    <div id="lastEntrySummary" class="mt-3 text-sm text-slate-300">Aun no hay registros guardados.</div>
+                </div>
+            </section>
+
+            <div class="no-print grid grid-cols-2 sm:grid-cols-5 gap-2 bg-white border border-slate-200 rounded-2xl p-2 shadow-sm">
+                <button id="tab-registro" onclick="switchTab('registro')" class="tab-active rounded-xl px-3 py-3 text-sm font-extrabold transition">Registro</button>
+                <button id="tab-historial" onclick="switchTab('historial')" class="rounded-xl px-3 py-3 text-sm font-extrabold text-slate-600 hover:bg-slate-50 transition">Historial</button>
+                <button id="tab-analisis" onclick="switchTab('analisis')" class="rounded-xl px-3 py-3 text-sm font-extrabold text-slate-600 hover:bg-slate-50 transition">Analisis</button>
+                <button id="tab-chat" onclick="switchTab('chat')" class="rounded-xl px-3 py-3 text-sm font-extrabold text-slate-600 hover:bg-slate-50 transition">Asistente</button>
+                <button id="tab-ajustes" onclick="switchTab('ajustes')" class="rounded-xl px-3 py-3 text-sm font-extrabold text-slate-600 hover:bg-slate-50 transition">Ajustes</button>
+            </div>
+
+            <section id="pane-registro" class="grid lg:grid-cols-[1fr_0.75fr] gap-6">
+                <form id="logForm" onsubmit="saveCurrentLog(event)" class="space-y-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <h3 class="font-extrabold text-slate-950">Tratamiento actual</h3>
+                            <input id="logDate" type="date" class="focus-ring rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold">
+                        </div>
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Medicamento</label>
+                                <select id="medication" onchange="toggleCustomMed()" class="focus-ring w-full p-3 border border-slate-200 rounded-xl text-sm">
+                                    <option value="Metilfenidato IR">Metilfenidato - liberacion inmediata</option>
+                                    <option value="Metilfenidato OROS">Metilfenidato - sistema OROS</option>
+                                    <option value="Metilfenidato SODAS">Metilfenidato - SODAS</option>
+                                    <option value="Lisdexanfetamina">Lisdexanfetamina</option>
+                                    <option value="Atomoxetina">Atomoxetina</option>
+                                    <option value="Guanfacina prolongada">Guanfacina prolongada</option>
+                                    <option value="Sin medicacion">Sin medicacion farmacologica</option>
+                                    <option value="Otro">Otro tratamiento</option>
+                                </select>
+                            </div>
+                            <div id="customMedBlock" class="hidden">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Tratamiento personalizado</label>
+                                <input type="text" id="customMedName" class="focus-ring w-full p-3 border border-slate-200 rounded-xl text-sm" placeholder="Ej. terapia conductual">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Dosis o regimen</label>
+                                <input type="text" id="dose" class="focus-ring w-full p-3 border border-slate-200 rounded-xl text-sm" placeholder="Ej. 18 mg manana">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Hora de toma</label>
+                                <input type="time" id="doseTime" class="focus-ring w-full p-3 border border-slate-200 rounded-xl text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-5">
+                        <h3 class="font-extrabold text-slate-950">Estado del paciente hoy</h3>
+                        <div id="slidersBlock" class="space-y-5"></div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Notas del dia</label>
+                            <textarea id="notes" rows="4" class="focus-ring w-full p-3 border border-slate-200 rounded-xl text-sm" placeholder="Cambios de apetito, escuela, energia, ansiedad, tics, efectos secundarios..."></textarea>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button type="submit" class="flex-1 bg-teal-700 hover:bg-teal-800 text-white font-extrabold py-3 px-5 rounded-xl transition">Guardar registro</button>
+                            <button type="button" onclick="resetLogForm()" class="border border-slate-200 hover:bg-slate-50 font-bold py-3 px-5 rounded-xl transition">Limpiar</button>
+                        </div>
+                    </div>
+                </form>
+
+                <aside class="space-y-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                        <div class="flex items-center justify-between gap-3">
+                            <h3 class="font-extrabold text-slate-950">Hacks de hoy</h3>
+                            <button onclick="getDailyHacks()" class="rounded-lg bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 text-xs font-extrabold">Generar</button>
+                        </div>
+                        <div id="aiHacksContent" class="mt-4 text-sm text-slate-600 leading-relaxed space-y-2">
+                            Ajusta los valores del dia y genera ideas practicas para concentracion, sueno y apetito.
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                        <h3 class="font-extrabold text-slate-950">Senales de atencion</h3>
+                        <ul class="mt-3 text-sm text-slate-600 space-y-2">
+                            <li>Valores de 1 o 2 repetidos por varios dias.</li>
+                            <li>Palpitaciones, dolor intenso o cambios bruscos de animo.</li>
+                            <li>Insomnio persistente o perdida marcada de apetito.</li>
+                        </ul>
+                        <p class="mt-4 text-xs text-slate-400">Ante sintomas intensos, consulta a tu profesional tratante.</p>
+                    </div>
+                </aside>
+            </section>
+
+            <section id="pane-historial" class="hidden space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                        <div>
+                            <h3 class="font-extrabold text-slate-950">Historial guardado</h3>
+                            <p class="text-sm text-slate-500">Edita, elimina o filtra los registros locales de esta cuenta.</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input id="searchHistory" oninput="renderHistoryTable()" type="search" placeholder="Buscar nota o medicacion" class="focus-ring rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                            <button onclick="exportCSV()" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold hover:bg-slate-50">CSV</button>
+                            <button onclick="downloadReportPDF()" class="rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-bold hover:bg-slate-800">PDF</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-100 text-xs text-slate-500 uppercase">
+                                    <th class="py-3 pr-4">Fecha</th>
+                                    <th class="py-3 pr-4">Tratamiento</th>
+                                    <th class="py-3 pr-4">Apetito</th>
+                                    <th class="py-3 pr-4">Sueno</th>
+                                    <th class="py-3 pr-4">Humor</th>
+                                    <th class="py-3 pr-4">Cardio</th>
+                                    <th class="py-3 pr-4">Fisico</th>
+                                    <th class="py-3 pr-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="historyEmpty" class="hidden text-center py-12 text-slate-500">
+                        <p class="font-bold text-slate-800">No hay registros todavia.</p>
+                        <p class="text-sm mt-1">Guarda el primer dia desde la pestana Registro.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pane-analisis" class="hidden grid lg:grid-cols-[1fr_0.75fr] gap-6">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="font-extrabold text-slate-950">Tendencias</h3>
+                            <p class="text-sm text-slate-500">Ultimos registros en escala de 1 a 5.</p>
+                        </div>
+                        <select id="chartWindow" onchange="initChart()" class="focus-ring rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold">
+                            <option value="7">Ultimos 7</option>
+                            <option value="14">Ultimos 14</option>
+                            <option value="30">Ultimos 30</option>
+                        </select>
+                    </div>
+                    <div class="relative h-[340px]">
+                        <canvas id="chartTendencias"></canvas>
+                    </div>
+                </div>
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                        <div class="flex items-center justify-between gap-3">
+                            <h3 class="font-extrabold text-slate-950">Analisis inteligente</h3>
+                            <button onclick="analyzeWeeklyData()" class="rounded-lg bg-teal-50 text-teal-800 border border-teal-100 px-3 py-2 text-xs font-extrabold">Analizar</button>
+                        </div>
+                        <div id="trendAnalysisBlock" class="mt-4 text-sm text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-xl p-4">
+                            Guarda varios registros y genera una lectura breve para preparar la consulta.
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                        <h3 class="font-extrabold text-slate-950">Resumen clinico</h3>
+                        <div id="clinicalSummary" class="mt-4 grid gap-3 text-sm"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pane-chat" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="bg-slate-950 text-white p-4 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-extrabold">Asistente @gabyneuropedia</h3>
+                        <p class="text-xs text-teal-300">Respuestas educativas con fallback local.</p>
+                    </div>
+                    <button onclick="clearChat()" class="text-xs font-bold text-slate-300 hover:text-white">Limpiar chat</button>
+                </div>
+                <div id="chatMessages" class="h-[460px] overflow-y-auto p-4 space-y-4 text-sm"></div>
+                <div class="border-t border-slate-200 p-4">
+                    <div class="grid sm:grid-cols-2 gap-2 mb-3">
+                        <button onclick="askPreset('Que hago si aparece insomnio al iniciar metilfenidato?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Insomnio por estimulante</button>
+                        <button onclick="askPreset('Como manejar la falta de apetito con lisdexanfetamina?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Falta de apetito</button>
+                    </div>
+                    <form onsubmit="sendChatMessage(event)" class="flex gap-2">
+                        <input id="chatInput" class="focus-ring flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="Escribe tu pregunta...">
+                        <button class="rounded-xl bg-teal-700 hover:bg-teal-800 text-white px-5 py-3 font-extrabold">Enviar</button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="pane-ajustes" class="hidden grid lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+                    <h3 class="font-extrabold text-slate-950">Perfil y preferencias</h3>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Nombre visible</label>
+                        <input id="settingsName" class="focus-ring w-full rounded-xl border border-slate-200 px-4 py-3 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Perspectiva predeterminada</label>
+                        <select id="settingsRole" class="focus-ring w-full rounded-xl border border-slate-200 px-4 py-3 text-sm">
+                            <option value="paciente">Paciente</option>
+                            <option value="cuidador">Cuidador</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Meta diaria</label>
+                        <input id="settingsGoal" class="focus-ring w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="Ej. tomar desayuno antes de la medicacion">
+                    </div>
+                    <button onclick="saveSettings()" class="rounded-xl bg-teal-700 hover:bg-teal-800 text-white px-5 py-3 font-extrabold">Guardar ajustes</button>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+                    <h3 class="font-extrabold text-slate-950">Datos locales</h3>
+                    <p class="text-sm text-slate-500">Exporta o importa un respaldo JSON de esta cuenta.</p>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button onclick="exportJSON()" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50">Exportar JSON</button>
+                        <label class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold hover:bg-slate-50 cursor-pointer text-center">
+                            Importar JSON
+                            <input type="file" accept="application/json" class="hidden" onchange="importJSON(event)">
+                        </label>
+                    </div>
+                    <div class="rounded-xl border border-red-100 bg-red-50 p-4">
+                        <p class="font-bold text-red-900">Zona de cuidado</p>
+                        <p class="text-sm text-red-700 mt-1">Esto elimina solo los datos clinicos de la cuenta actual, no el acceso.</p>
+                        <button onclick="clearCurrentUserData()" class="mt-3 rounded-lg bg-red-600 hover:bg-red-700 text-white px-3 py-2 text-xs font-extrabold">Borrar historial local</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 right-5 z-50 translate-y-20 opacity-0 transition-all duration-300 bg-slate-950 text-white px-4 py-3 rounded-xl shadow-xl text-sm max-w-sm"></div>
+
+    <script>
+        const STORAGE_KEY = "trajeTDAH.v1";
+        const SESSION_KEY = "trajeTDAH.session";
+        const variables = ["apetito", "sueno", "humor", "cardio", "fisico"];
+        const variableMeta = {
+            apetito: { paciente: "Apetito", cuidador: "Ingesta / apetito" },
+            sueno: { paciente: "Calidad del sueno", cuidador: "Conciliacion y sueno" },
+            humor: { paciente: "Humor / tics", cuidador: "Estabilidad de animo / tics" },
+            cardio: { paciente: "Ritmo del corazon", cuidador: "Frecuencia cardiaca / pulso" },
+            fisico: { paciente: "Bienestar fisico", cuidador: "Efectos secundarios fisicos" }
+        };
+        const scaleLabels = {
+            paciente: {
+                apetito: { 1: "Sin apetito", 2: "Comi muy poco", 3: "Normal", 4: "Buen apetito", 5: "Muy bien" },
+                sueno: { 1: "Muy mal", 2: "Costo dormir", 3: "Intermedio", 4: "Dormi bien", 5: "Excelente" },
+                humor: { 1: "Irritable", 2: "Tenso", 3: "Tranquilo", 4: "De buenas", 5: "Muy feliz" },
+                cardio: { 1: "Palpitaciones", 2: "Rapido", 3: "Normal", 4: "Tranquilo", 5: "Optimo" },
+                fisico: { 1: "Mucho dolor", 2: "Molestias", 3: "Bien", 4: "Muy bien", 5: "Excelente" }
+            },
+            cuidador: {
+                apetito: { 1: "Anorexia severa", 2: "Inapetencia", 3: "Ingesta normal", 4: "Buena ingesta", 5: "Optima" },
+                sueno: { 1: "Insomnio grave", 2: "Insomnio leve", 3: "Intermedio", 4: "Reparador", 5: "Profundo" },
+                humor: { 1: "Labilidad/tics", 2: "Ansiedad leve", 3: "Estable", 4: "Regulado", 5: "Optimo" },
+                cardio: { 1: "Taquicardia", 2: "Acelerado", 3: "Normal", 4: "Sano", 5: "Optimo" },
+                fisico: { 1: "Adversos graves", 2: "Cefalea leve", 3: "Ausentes", 4: "Asintomatico", 5: "Excelente" }
+            }
+        };
+
+        let appState = loadStore();
+        let currentUserId = localStorage.getItem(SESSION_KEY);
+        let chartInstance = null;
+        let authMode = "login";
+        let editingEntryId = null;
+
+        function loadStore() {
+            const fallback = { users: {}, version: 1 };
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || fallback;
+            } catch {
+                return fallback;
+            }
+        }
+
+        function saveStore() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        }
+
+        async function digestPassword(password) {
+            if (!crypto?.subtle) return simpleHash(password);
+            const bytes = new TextEncoder().encode(password);
+            const hashBuffer = await crypto.subtle.digest("SHA-256", bytes);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+        }
+
+        function simpleHash(value) {
+            let hash = 2166136261;
+            for (let i = 0; i < value.length; i += 1) {
+                hash ^= value.charCodeAt(i);
+                hash = Math.imul(hash, 16777619);
+            }
+            return `local-${(hash >>> 0).toString(16)}`;
+        }
+
+        function createId() {
+            if (crypto?.randomUUID) return crypto.randomUUID();
+            return `entry-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+
+        function normalizeEmail(email) {
+            return String(email || "").trim().toLowerCase();
+        }
+
+        function createEmptyUser({ name, email, provider, passwordHash = "" }) {
+            const id = `${provider}:${normalizeEmail(email)}`;
+            return {
+                id,
+                name: name || normalizeEmail(email).split("@")[0] || "Usuario",
+                email: normalizeEmail(email),
+                provider,
+                passwordHash,
+                createdAt: new Date().toISOString(),
+                settings: { role: "paciente", goal: "" },
+                entries: [],
+                chat: []
+            };
+        }
+
+        function getCurrentUser() {
+            return appState.users[currentUserId] || null;
+        }
+
+        function setAuthMode(mode) {
+            authMode = mode;
+            document.getElementById("nameField").classList.toggle("hidden", mode !== "register");
+            document.getElementById("authSubmit").innerText = mode === "register" ? "Crear cuenta" : "Entrar";
+            document.getElementById("loginModeBtn").className = mode === "login" ? "auth-mode flex-1 rounded-lg py-2 text-sm font-bold bg-white shadow-sm" : "auth-mode flex-1 rounded-lg py-2 text-sm font-bold text-slate-500";
+            document.getElementById("registerModeBtn").className = mode === "register" ? "auth-mode flex-1 rounded-lg py-2 text-sm font-bold bg-white shadow-sm" : "auth-mode flex-1 rounded-lg py-2 text-sm font-bold text-slate-500";
+        }
+
+        async function handleEmailAuth(event) {
+            event.preventDefault();
+            const email = normalizeEmail(document.getElementById("authEmail").value);
+            const password = document.getElementById("authPassword").value;
+            const name = document.getElementById("authName").value.trim();
+            const id = `email:${email}`;
+            const hash = await digestPassword(password);
+
+            if (authMode === "register") {
+                if (appState.users[id]) return showToast("Ya existe una cuenta con ese email.");
+                appState.users[id] = createEmptyUser({ name, email, provider: "email", passwordHash: hash });
+                saveStore();
+                loginAs(id);
+                return;
+            }
+
+            const user = appState.users[id];
+            if (!user || user.passwordHash !== hash) {
+                showToast("Email o password incorrectos.");
+                return;
+            }
+            loginAs(id);
+        }
+
+        function openGooglePanel() {
+            document.getElementById("googlePanel").classList.toggle("hidden");
+        }
+
+        function handleGoogleAuth() {
+            const email = normalizeEmail(document.getElementById("googleEmail").value);
+            const name = document.getElementById("googleName").value.trim();
+            if (!email || !email.includes("@")) return showToast("Ingresa un email Google valido.");
+            const id = `google:${email}`;
+            if (!appState.users[id]) {
+                appState.users[id] = createEmptyUser({ name, email, provider: "google" });
+                saveStore();
+            }
+            loginAs(id);
+        }
+
+        function loginAs(id) {
+            currentUserId = id;
+            localStorage.setItem(SESSION_KEY, id);
+            showApp();
+            showToast("Sesion iniciada.");
+        }
+
+        function logout() {
+            localStorage.removeItem(SESSION_KEY);
+            currentUserId = null;
+            document.getElementById("appView").classList.add("hidden");
+            document.getElementById("authView").classList.remove("hidden");
+        }
+
+        function showApp() {
+            const user = getCurrentUser();
+            if (!user) return logout();
+            document.getElementById("authView").classList.add("hidden");
+            document.getElementById("appView").classList.remove("hidden");
+            document.getElementById("welcomeLine").innerText = `${user.name} · ${user.provider === "google" ? "Google local" : "Email"}`;
+            document.getElementById("roleToggle").value = user.settings.role || "paciente";
+            document.getElementById("settingsName").value = user.name;
+            document.getElementById("settingsRole").value = user.settings.role || "paciente";
+            document.getElementById("settingsGoal").value = user.settings.goal || "";
+            renderSliders();
+            resetLogForm();
+            renderAll();
+            switchTab("registro");
+        }
+
+        function todayISO() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function renderSliders() {
+            const role = document.getElementById("roleToggle").value;
+            const block = document.getElementById("slidersBlock");
+            block.innerHTML = variables.map(variable => `
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between gap-3">
+                        <label for="input-${variable}" class="text-sm font-bold text-slate-700">${variableMeta[variable][role]}</label>
+                        <span id="label-${variable}" class="text-xs bg-teal-50 text-teal-800 px-2.5 py-1 rounded-full font-extrabold">3 - ${scaleLabels[role][variable][3]}</span>
+                    </div>
+                    <input id="input-${variable}" type="range" min="1" max="5" value="3" oninput="updateSliderLabel('${variable}')" class="range-track w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+                    <p id="desc-${variable}" class="text-xs text-slate-400">Indicador estable y dentro de lo esperado.</p>
+                </div>
+            `).join("");
+        }
+
+        function updateSliderLabel(variable) {
+            const role = document.getElementById("roleToggle").value;
+            const val = Number(document.getElementById(`input-${variable}`).value);
+            document.getElementById(`label-${variable}`).innerText = `${val} - ${scaleLabels[role][variable][val]}`;
+            document.getElementById(`desc-${variable}`).innerText = val <= 2 ? "Atencion: conviene monitorizar este descenso." : val === 3 ? "Indicador estable y dentro de lo esperado." : "Buen nivel de funcionamiento para hoy.";
+        }
+
+        function updateRoleUI() {
+            renderSliders();
+        }
+
+        function persistSettings() {
+            const user = getCurrentUser();
+            if (!user) return;
+            user.settings.role = document.getElementById("roleToggle").value;
+            document.getElementById("settingsRole").value = user.settings.role;
+            saveStore();
+        }
+
+        function toggleCustomMed() {
+            document.getElementById("customMedBlock").classList.toggle("hidden", document.getElementById("medication").value !== "Otro");
+        }
+
+        function saveCurrentLog(event) {
+            event.preventDefault();
+            const user = getCurrentUser();
+            const medication = document.getElementById("medication").value === "Otro"
+                ? document.getElementById("customMedName").value.trim() || "Otro"
+                : document.getElementById("medication").value;
+            const entry = {
+                id: editingEntryId || createId(),
+                date: document.getElementById("logDate").value || todayISO(),
+                createdAt: editingEntryId ? undefined : new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                med: medication,
+                dose: document.getElementById("dose").value.trim() || "Sin dosis",
+                doseTime: document.getElementById("doseTime").value,
+                notes: document.getElementById("notes").value.trim(),
+                role: document.getElementById("roleToggle").value,
+                values: Object.fromEntries(variables.map(v => [v, Number(document.getElementById(`input-${v}`).value)]))
+            };
+
+            const existingIndex = user.entries.findIndex(item => item.id === entry.id);
+            if (existingIndex >= 0) {
+                entry.createdAt = user.entries[existingIndex].createdAt;
+                user.entries[existingIndex] = entry;
+            } else {
+                user.entries.push(entry);
+            }
+            user.entries.sort((a, b) => a.date.localeCompare(b.date));
+            saveStore();
+            editingEntryId = null;
+            resetLogForm();
+            renderAll();
+            showToast("Registro guardado localmente.");
+        }
+
+        function resetLogForm() {
+            editingEntryId = null;
+            document.getElementById("logDate").value = todayISO();
+            document.getElementById("dose").value = "";
+            document.getElementById("doseTime").value = "";
+            document.getElementById("notes").value = "";
+            document.getElementById("customMedName").value = "";
+            document.getElementById("medication").value = "Metilfenidato IR";
+            toggleCustomMed();
+            variables.forEach(v => {
+                const input = document.getElementById(`input-${v}`);
+                if (input) {
+                    input.value = 3;
+                    updateSliderLabel(v);
+                }
+            });
+        }
+
+        function editEntry(id) {
+            const user = getCurrentUser();
+            const entry = user.entries.find(item => item.id === id);
+            if (!entry) return;
+            editingEntryId = id;
+            document.getElementById("logDate").value = entry.date;
+            document.getElementById("dose").value = entry.dose || "";
+            document.getElementById("doseTime").value = entry.doseTime || "";
+            document.getElementById("notes").value = entry.notes || "";
+            const medSelect = document.getElementById("medication");
+            const medExists = Array.from(medSelect.options).some(option => option.value === entry.med);
+            medSelect.value = medExists ? entry.med : "Otro";
+            document.getElementById("customMedName").value = medExists ? "" : entry.med;
+            toggleCustomMed();
+            variables.forEach(v => {
+                document.getElementById(`input-${v}`).value = entry.values[v] || 3;
+                updateSliderLabel(v);
+            });
+            switchTab("registro");
+            showToast("Editando registro seleccionado.");
+        }
+
+        function deleteEntry(id) {
+            if (!confirm("Eliminar este registro local?")) return;
+            const user = getCurrentUser();
+            user.entries = user.entries.filter(item => item.id !== id);
+            saveStore();
+            renderAll();
+            showToast("Registro eliminado.");
+        }
+
+        function renderAll() {
+            renderStats();
+            renderHistoryTable();
+            renderClinicalSummary();
+            initChart();
+            renderChat();
+        }
+
+        function renderStats() {
+            const user = getCurrentUser();
+            const entries = user.entries;
+            document.getElementById("statEntries").innerText = entries.length;
+            const allValues = entries.flatMap(entry => variables.map(v => entry.values[v]));
+            document.getElementById("statAverage").innerText = allValues.length ? (allValues.reduce((a, b) => a + b, 0) / allValues.length).toFixed(1) : "-";
+            document.getElementById("statStreak").innerText = calculateStreak(entries);
+            const last = [...entries].sort((a, b) => b.date.localeCompare(a.date))[0];
+            document.getElementById("lastEntrySummary").innerHTML = last
+                ? `<p class="font-bold text-white">${formatDate(last.date)} · ${escapeHTML(last.med)} (${escapeHTML(last.dose)})</p><p class="mt-2">Apetito ${last.values.apetito}/5, sueno ${last.values.sueno}/5, humor ${last.values.humor}/5.</p>${last.notes ? `<p class="mt-2 text-slate-400">${escapeHTML(last.notes)}</p>` : ""}`
+                : "Aun no hay registros guardados.";
+        }
+
+        function calculateStreak(entries) {
+            const dates = new Set(entries.map(entry => entry.date));
+            let streak = 0;
+            const cursor = new Date();
+            while (dates.has(cursor.toISOString().slice(0, 10))) {
+                streak += 1;
+                cursor.setDate(cursor.getDate() - 1);
+            }
+            return streak;
+        }
+
+        function renderHistoryTable() {
+            const user = getCurrentUser();
+            if (!user) return;
+            const query = (document.getElementById("searchHistory")?.value || "").toLowerCase();
+            const tbody = document.getElementById("historyTableBody");
+            const filtered = [...user.entries]
+                .sort((a, b) => b.date.localeCompare(a.date))
+                .filter(entry => `${entry.med} ${entry.dose} ${entry.notes}`.toLowerCase().includes(query));
+            tbody.innerHTML = filtered.map(entry => `
+                <tr class="align-top">
+                    <td class="py-3 pr-4 font-bold text-slate-800">${formatDate(entry.date)}</td>
+                    <td class="py-3 pr-4"><span class="font-bold">${escapeHTML(entry.med)}</span><br><span class="text-xs text-slate-500">${escapeHTML(entry.dose)} ${entry.doseTime ? "· " + escapeHTML(entry.doseTime) : ""}</span></td>
+                    ${variables.map(v => `<td class="py-3 pr-4">${entry.values[v] || "-"}/5</td>`).join("")}
+                    <td class="py-3 pr-4 whitespace-nowrap">
+                        <button onclick="editEntry('${entry.id}')" class="text-xs font-bold text-teal-700 hover:text-teal-900">Editar</button>
+                        <button onclick="deleteEntry('${entry.id}')" class="ml-3 text-xs font-bold text-red-600 hover:text-red-800">Eliminar</button>
+                    </td>
+                </tr>
+                ${entry.notes ? `<tr><td></td><td colspan="7" class="pb-3 pr-4 text-xs text-slate-500">${escapeHTML(entry.notes)}</td></tr>` : ""}
+            `).join("");
+            document.getElementById("historyEmpty").classList.toggle("hidden", filtered.length > 0);
+        }
+
+        function initChart() {
+            const canvas = document.getElementById("chartTendencias");
+            if (!canvas || document.getElementById("pane-analisis").classList.contains("hidden")) return;
+            const user = getCurrentUser();
+            const limit = Number(document.getElementById("chartWindow").value || 7);
+            const entries = [...user.entries].sort((a, b) => a.date.localeCompare(b.date)).slice(-limit);
+            const ctx = canvas.getContext("2d");
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: entries.map(entry => formatDate(entry.date)),
+                    datasets: [
+                        { label: "Apetito", data: entries.map(e => e.values.apetito), borderColor: "#0f766e", backgroundColor: "#0f766e22", tension: 0.35, borderWidth: 3 },
+                        { label: "Sueno", data: entries.map(e => e.values.sueno), borderColor: "#f59e0b", backgroundColor: "#f59e0b22", tension: 0.35, borderWidth: 3 },
+                        { label: "Humor", data: entries.map(e => e.values.humor), borderColor: "#db2777", backgroundColor: "#db277722", tension: 0.35, borderWidth: 3 },
+                        { label: "Cardio", data: entries.map(e => e.values.cardio), borderColor: "#2563eb", backgroundColor: "#2563eb22", tension: 0.35, borderWidth: 2 },
+                        { label: "Fisico", data: entries.map(e => e.values.fisico), borderColor: "#475569", backgroundColor: "#47556922", tension: 0.35, borderWidth: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 1, max: 5, ticks: { stepSize: 1 } } },
+                    plugins: { legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } } }
+                }
+            });
+        }
+
+        function renderClinicalSummary() {
+            const user = getCurrentUser();
+            const entries = user.entries;
+            const box = document.getElementById("clinicalSummary");
+            if (!entries.length) {
+                box.innerHTML = `<p class="text-slate-500">Aun no hay datos suficientes.</p>`;
+                return;
+            }
+            box.innerHTML = variables.map(v => {
+                const values = entries.map(entry => entry.values[v]).filter(Boolean);
+                const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                const lowDays = values.filter(value => value <= 2).length;
+                return `<div class="rounded-xl bg-slate-50 border border-slate-100 p-3 flex items-center justify-between gap-3">
+                    <span class="font-bold">${variableMeta[v][document.getElementById("roleToggle").value]}</span>
+                    <span class="text-sm text-slate-500">Prom. ${avg.toFixed(1)} · ${lowDays} dias bajos</span>
+                </div>`;
+            }).join("");
+        }
+
+        function getDailyHacks() {
+            const values = Object.fromEntries(variables.map(v => [v, Number(document.getElementById(`input-${v}`).value)]));
+            const hacks = [];
+            if (values.apetito <= 2) hacks.push("Desayuno con proteina antes de la medicacion y colaciones pequenas durante el dia.");
+            if (values.sueno <= 2) hacks.push("Bloque sin pantallas 45 minutos antes de dormir y rutina breve repetible.");
+            if (values.humor <= 2) hacks.push("Pausa de regulacion: agua, respiracion 4-4-6 y una tarea pequena con inicio claro.");
+            if (values.cardio <= 2) hacks.push("Registra hora, pulso si lo tienes y consulta si hay palpitaciones intensas.");
+            if (values.fisico <= 2) hacks.push("Baja la carga del dia y anota dolor, duracion e intensidad para la consulta.");
+            if (!hacks.length) hacks.push("Usa bloques de 25 minutos con descanso fisico corto.", "Prepara una tarea visible y elimina una distraccion del entorno.", "Cierra el dia anotando que funciono para repetirlo manana.");
+            document.getElementById("aiHacksContent").innerHTML = hacks.slice(0, 3).map(item => `<p class="rounded-xl bg-amber-50 border border-amber-100 p-3">${escapeHTML(item)}</p>`).join("");
+        }
+
+        function analyzeWeeklyData() {
+            const user = getCurrentUser();
+            const entries = [...user.entries].sort((a, b) => a.date.localeCompare(b.date)).slice(-7);
+            const block = document.getElementById("trendAnalysisBlock");
+            if (entries.length < 2) {
+                block.innerHTML = "Guarda al menos dos registros para comparar tendencias.";
+                return;
+            }
+            const averages = Object.fromEntries(variables.map(v => [v, entries.reduce((sum, entry) => sum + entry.values[v], 0) / entries.length]));
+            const weakest = Object.entries(averages).sort((a, b) => a[1] - b[1])[0];
+            const strongest = Object.entries(averages).sort((a, b) => b[1] - a[1])[0];
+            block.innerHTML = `En los ultimos ${entries.length} registros, el area mas sensible es <strong>${variableMeta[weakest[0]].cuidador}</strong> con promedio ${weakest[1].toFixed(1)}/5. La mejor sostenida es <strong>${variableMeta[strongest[0]].cuidador}</strong>. Lleva esta tendencia a la proxima cita para decidir ajustes de habitos, horario o dosis con tu profesional.`;
+        }
+
+        function renderChat() {
+            const user = getCurrentUser();
+            const chat = user.chat.length ? user.chat : [{ from: "bot", text: "Hola. Puedo ayudarte a preparar preguntas para la consulta, leer tendencias y pensar estrategias de rutina. No sustituyo indicacion medica." }];
+            document.getElementById("chatMessages").innerHTML = chat.map(message => `
+                <div class="flex ${message.from === "user" ? "justify-end" : "justify-start"}">
+                    <div class="max-w-[85%] rounded-2xl p-3 ${message.from === "user" ? "bg-teal-700 text-white" : "bg-slate-100 text-slate-700"}">${escapeHTML(message.text)}</div>
+                </div>
+            `).join("");
+        }
+
+        function sendChatMessage(event) {
+            event.preventDefault();
+            const input = document.getElementById("chatInput");
+            const text = input.value.trim();
+            if (!text) return;
+            const user = getCurrentUser();
+            user.chat.push({ from: "user", text, at: new Date().toISOString() });
+            user.chat.push({ from: "bot", text: localAssistantReply(text), at: new Date().toISOString() });
+            input.value = "";
+            saveStore();
+            renderChat();
+            const chatMessages = document.getElementById("chatMessages");
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function askPreset(text) {
+            document.getElementById("chatInput").value = text;
+            sendChatMessage(new Event("submit"));
+        }
+
+        function localAssistantReply(text) {
+            const lower = text.toLowerCase();
+            if (lower.includes("insomnio") || lower.includes("sueno")) return "Si el sueno empeora tras iniciar o subir dosis, registra hora de toma, duracion del efecto y despertares. Evita cafeina tarde y consulta si persiste varios dias para revisar horario o dosis.";
+            if (lower.includes("apetito") || lower.includes("comer")) return "La falta de apetito suele manejarse planificando proteina antes de la toma, colaciones pequenas y cena nutritiva. Si hay perdida de peso o rechazo sostenido, llevalo a consulta.";
+            if (lower.includes("adiccion") || lower.includes("dependencia")) return "Usados con supervision medica, los estimulantes para TDAH buscan mejorar funcionalidad y reducir interferencia. No cambies dosis por tu cuenta; conversa dudas y antecedentes con tu medico.";
+            return "Buena pregunta. Conviene convertirla en datos: cuando ocurre, cuanto dura, que medicamento y dosis habia, y que impacto tuvo en escuela, casa o descanso. Lleva ese patron a la proxima cita.";
+        }
+
+        function clearChat() {
+            const user = getCurrentUser();
+            user.chat = [];
+            saveStore();
+            renderChat();
+        }
+
+        function switchTab(tabName) {
+            ["registro", "historial", "analisis", "chat", "ajustes"].forEach(name => {
+                document.getElementById(`pane-${name}`).classList.toggle("hidden", name !== tabName);
+                const tab = document.getElementById(`tab-${name}`);
+                tab.className = name === tabName
+                    ? "tab-active rounded-xl px-3 py-3 text-sm font-extrabold transition"
+                    : "rounded-xl px-3 py-3 text-sm font-extrabold text-slate-600 hover:bg-slate-50 transition";
+            });
+            if (tabName === "analisis") {
+                initChart();
+                renderClinicalSummary();
+            }
+        }
+
+        function saveSettings() {
+            const user = getCurrentUser();
+            user.name = document.getElementById("settingsName").value.trim() || user.name;
+            user.settings.role = document.getElementById("settingsRole").value;
+            user.settings.goal = document.getElementById("settingsGoal").value.trim();
+            document.getElementById("roleToggle").value = user.settings.role;
+            saveStore();
+            showApp();
+            showToast("Ajustes guardados.");
+        }
+
+        function exportJSON() {
+            downloadFile(`traje-tdah-${todayISO()}.json`, JSON.stringify(getCurrentUser(), null, 2), "application/json");
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const imported = JSON.parse(reader.result);
+                    const user = getCurrentUser();
+                    user.entries = Array.isArray(imported.entries) ? imported.entries : user.entries;
+                    user.settings = imported.settings || user.settings;
+                    user.chat = Array.isArray(imported.chat) ? imported.chat : user.chat;
+                    saveStore();
+                    showApp();
+                    showToast("Respaldo importado.");
+                } catch {
+                    showToast("El archivo JSON no es valido.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function exportCSV() {
+            const user = getCurrentUser();
+            const header = ["fecha", "medicamento", "dosis", "hora", ...variables, "notas"];
+            const rows = user.entries.map(entry => [
+                entry.date, entry.med, entry.dose, entry.doseTime || "",
+                ...variables.map(v => entry.values[v] || ""),
+                entry.notes || ""
+            ]);
+            const csv = [header, ...rows].map(row => row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+            downloadFile(`traje-tdah-${todayISO()}.csv`, csv, "text/csv");
+        }
+
+        function downloadReportPDF() {
+            const user = getCurrentUser();
+            const element = document.createElement("div");
+            element.className = "p-8 bg-white text-slate-800";
+            element.innerHTML = `
+                <h1 style="font-size:22px;font-weight:800;margin:0 0 4px;">Reporte de seguimiento TDAH</h1>
+                <p style="font-size:12px;color:#475569;margin:0 0 18px;">${escapeHTML(user.name)} · generado ${new Date().toLocaleDateString("es-MX")}</p>
+                <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                    <thead><tr>${["Fecha","Tratamiento","Apetito","Sueno","Humor","Cardio","Fisico","Notas"].map(h => `<th style="border-bottom:1px solid #cbd5e1;text-align:left;padding:6px;">${h}</th>`).join("")}</tr></thead>
+                    <tbody>${user.entries.map(entry => `<tr>
+                        <td style="padding:6px;border-bottom:1px solid #e2e8f0;">${formatDate(entry.date)}</td>
+                        <td style="padding:6px;border-bottom:1px solid #e2e8f0;">${escapeHTML(entry.med)} · ${escapeHTML(entry.dose)}</td>
+                        ${variables.map(v => `<td style="padding:6px;border-bottom:1px solid #e2e8f0;">${entry.values[v]}/5</td>`).join("")}
+                        <td style="padding:6px;border-bottom:1px solid #e2e8f0;">${escapeHTML(entry.notes || "")}</td>
+                    </tr>`).join("")}</tbody>
+                </table>
+                <p style="margin-top:18px;font-size:10px;color:#64748b;">Este reporte es una herramienta de registro y no sustituye consulta medica profesional.</p>
+            `;
+            html2pdf().set({
+                margin: 0.5,
+                filename: `reporte-tdah-${todayISO()}.pdf`,
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+            }).from(element).save();
+        }
+
+        function clearCurrentUserData() {
+            if (!confirm("Borrar todo el historial clinico de esta cuenta?")) return;
+            const user = getCurrentUser();
+            user.entries = [];
+            user.chat = [];
+            saveStore();
+            renderAll();
+            showToast("Historial local borrado.");
+        }
+
+        function downloadFile(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function formatDate(date) {
+            const [year, month, day] = date.split("-");
+            return `${day}/${month}/${year}`;
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.innerText = message;
+            toast.classList.remove("translate-y-20", "opacity-0");
+            setTimeout(() => toast.classList.add("translate-y-20", "opacity-0"), 2800);
+        }
+
+        window.addEventListener("load", () => {
+            setAuthMode("login");
+            if (currentUserId && appState.users[currentUserId]) showApp();
+        });
+    </script>
+</body>
+</html>
