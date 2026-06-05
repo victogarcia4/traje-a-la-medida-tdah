@@ -355,7 +355,6 @@
                         <option value="cuidador">Cuidador</option>
                     </select>
                     <button onclick="switchTab('ajustes')" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold hover:bg-slate-50">Ajustes</button>
-                    <button onclick="logout()" class="rounded-lg bg-slate-900 text-white px-3 py-2 text-xs font-bold hover:bg-slate-800">Salir</button>
                 </div>
             </div>
         </nav>
@@ -552,9 +551,16 @@
                 </div>
                 <div id="chatMessages" class="h-[460px] overflow-y-auto p-4 space-y-4 text-sm"></div>
                 <div class="border-t border-slate-200 p-4">
-                    <div class="grid sm:grid-cols-2 gap-2 mb-3">
+                    <p class="mb-3 text-xs font-bold text-slate-500">Elige una pregunta frecuente o escribe la tuya abajo.</p>
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
                         <button onclick="askPreset('Que hago si aparece insomnio al iniciar metilfenidato?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Insomnio por estimulante</button>
                         <button onclick="askPreset('Como manejar la falta de apetito con lisdexanfetamina?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Falta de apetito</button>
+                        <button onclick="askPreset('Que datos debo llevar a la consulta de control?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Datos para consulta</button>
+                        <button onclick="askPreset('Como saber si la dosis esta funcionando?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Dosis y funcionalidad</button>
+                        <button onclick="askPreset('Que puedo hacer si hay irritabilidad o tics?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Irritabilidad o tics</button>
+                        <button onclick="askPreset('Como apoyar la rutina de escuela y tareas?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Escuela y tareas</button>
+                        <button onclick="askPreset('Que hago si olvide una dosis?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Dosis olvidada</button>
+                        <button onclick="askPreset('Cuando debo buscar ayuda urgente o especialista?')" class="text-left rounded-xl border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-900">Ayuda especializada</button>
                     </div>
                     <form onsubmit="sendChatMessage(event)" class="flex gap-2">
                         <input id="chatInput" class="focus-ring flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="Escribe tu pregunta...">
@@ -763,7 +769,7 @@
             if (!user) return logout();
             document.getElementById("authView").classList.add("hidden");
             document.getElementById("appView").classList.remove("hidden");
-            document.getElementById("welcomeLine").innerText = `${user.name} · ${user.provider === "google" ? "Google local" : "Email"}`;
+            document.getElementById("welcomeLine").innerText = `${user.name} · ${user.provider === "google" ? "Google local" : user.provider === "local" ? "Local" : "Email"}`;
             document.getElementById("roleToggle").value = user.settings.role || "paciente";
             document.getElementById("settingsName").value = user.name;
             document.getElementById("settingsRole").value = user.settings.role || "paciente";
@@ -1113,10 +1119,18 @@
 
         function localAssistantReply(text) {
             const lower = text.toLowerCase();
+            const outOfScopeSignals = ["diagnostico", "diagnosticar", "recetar", "subir dosis", "bajar dosis", "cambiar dosis", "suspender", "quitar medicamento", "mezclar", "interaccion", "embarazo", "convulsion", "desmayo", "dolor de pecho", "suicidio", "autolesion", "alucinacion", "crisis", "emergencia"];
+            if (outOfScopeSignals.some(signal => lower.includes(signal))) return "Esto puede estar fuera del alcance de orientacion general de la app. Si hay dolor de pecho, desmayo, convulsiones, ideas de autolesion, alucinaciones o una reaccion intensa, busca atencion urgente. Para diagnostico, cambios de dosis, suspender medicamentos o interacciones, consulta al neurologo, psiquiatra, pediatra o especialista tratante.";
             if (lower.includes("insomnio") || lower.includes("sueno")) return "Si el sueno empeora tras iniciar o subir dosis, registra hora de toma, duracion del efecto y despertares. Evita cafeina tarde y consulta si persiste varios dias para revisar horario o dosis.";
             if (lower.includes("apetito") || lower.includes("comer")) return "La falta de apetito suele manejarse planificando proteina antes de la toma, colaciones pequenas y cena nutritiva. Si hay perdida de peso o rechazo sostenido, llevalo a consulta.";
+            if (lower.includes("datos") || lower.includes("consulta de control")) return "Lleva fecha, hora de toma, dosis, sueno, apetito, humor, tics, pulso si lo mides, notas de escuela y momentos donde el medicamento parece empezar o terminar. Mientras mas concreto el patron, mas facil es ajustar el plan con el especialista.";
+            if (lower.includes("funcionando") || lower.includes("funcionalidad")) return "Una dosis suele evaluarse por funcionalidad, no solo por estar mas quieto. Observa si mejora iniciar tareas, terminar trabajo, regular emociones, escuchar instrucciones y tolerar transiciones. Si hay beneficio parcial o efectos molestos, registralo y revisalo con el neurologo o medico tratante.";
+            if (lower.includes("irritabilidad") || lower.includes("tics") || lower.includes("humor")) return "Anota hora, intensidad, duracion y si aparece al pico del medicamento o cuando se acaba el efecto. Baja estimulos, ofrece descanso breve y evita discutir en el pico de irritabilidad. Si los tics aumentan, hay ansiedad marcada o cambios de animo intensos, consulta al neurologo o terapeuta.";
+            if (lower.includes("escuela") || lower.includes("tareas") || lower.includes("rutina")) return "Apoya con instrucciones cortas, una tarea visible a la vez, temporizador, pausas fisicas y refuerzo inmediato. Para escuela, pide observaciones concretas: inicio de tareas, finalizacion, impulsividad y convivencia. Si hay deterioro academico o conductual persistente, conviene sumar terapeuta, psicopedagogo o equipo escolar.";
+            if (lower.includes("olvide") || lower.includes("olvidada")) return "No dupliques dosis sin indicacion medica. Registra la hora en que se olvido y como estuvo el dia. Para medicamentos estimulantes, tomar tarde puede afectar el sueno; para no estimulantes la regla puede ser distinta. Confirma el plan de dosis olvidada con tu medico o farmaceutico.";
+            if (lower.includes("urgente") || lower.includes("especialista") || lower.includes("ayuda")) return "Busca ayuda urgente si hay dolor de pecho, desmayo, dificultad para respirar, convulsiones, ideas de autolesion, alucinaciones, agresividad severa o reaccion alergica. Para ajustes de medicamento acude al neurologo, psiquiatra, pediatra o medico tratante. Para conducta, ansiedad, rutinas o escuela, puede ayudar terapeuta, psicologo o psicopedagogo.";
             if (lower.includes("adiccion") || lower.includes("dependencia")) return "Usados con supervision medica, los estimulantes para TDAH buscan mejorar funcionalidad y reducir interferencia. No cambies dosis por tu cuenta; conversa dudas y antecedentes con tu medico.";
-            return "Buena pregunta. Conviene convertirla en datos: cuando ocurre, cuanto dura, que medicamento y dosis habia, y que impacto tuvo en escuela, casa o descanso. Lleva ese patron a la proxima cita.";
+            return "Buena pregunta. Puedo orientar con registro de sintomas, rutinas, apetito, sueno, escuela y preparacion de consulta. Si tu pregunta implica diagnostico, cambios de dosis, efectos intensos o decisiones de tratamiento, lo mas seguro es revisarlo con el neurologo, pediatra, psiquiatra, terapeuta o especialista que corresponda. Mientras tanto, conviertelo en datos: cuando ocurre, cuanto dura, que dosis habia y que impacto tuvo.";
         }
 
         function clearChat() {
@@ -1252,8 +1266,29 @@
         }
 
         window.addEventListener("load", () => {
-            setAuthMode("login");
-            if (currentUserId && appState.users[currentUserId]) showApp();
+            if (currentUserId && appState.users[currentUserId]) {
+                showApp();
+                return;
+            }
+            const userKeys = Object.keys(appState.users);
+            if (userKeys.length > 0) {
+                loginAs(userKeys[0]);
+            } else {
+                const defaultId = "local-user";
+                appState.users[defaultId] = {
+                    id: defaultId,
+                    name: "Usuario",
+                    email: "usuario@local.com",
+                    provider: "local",
+                    passwordHash: "",
+                    createdAt: new Date().toISOString(),
+                    settings: { role: "paciente", goal: "" },
+                    entries: [],
+                    chat: []
+                };
+                saveStore();
+                loginAs(defaultId);
+            }
         });
     </script>
 </body>
